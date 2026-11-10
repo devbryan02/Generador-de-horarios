@@ -7,8 +7,8 @@ import elp.edu.pe.horario.domain.solver.HorarioSolucion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.solver.SolverJob;
-import org.optaplanner.core.api.solver.SolverManager;
+import ai.timefold.solver.core.api.solver.SolverJob;
+import ai.timefold.solver.core.api.solver.SolverManager;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

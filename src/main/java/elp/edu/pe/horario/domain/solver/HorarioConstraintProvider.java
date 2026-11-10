@@ -6,14 +6,14 @@ import elp.edu.pe.horario.domain.model.Docente;
 import elp.edu.pe.horario.domain.model.Seccion;
 import elp.edu.pe.horario.domain.model.BloqueHorario;
 import elp.edu.pe.horario.domain.model.CursoSeccionDocente;
-import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
-import org.optaplanner.core.api.score.stream.*;
+import ai.timefold.solver.core.api.score.buildin.hardsoft.HardSoftScore;
+import ai.timefold.solver.core.api.score.stream.*;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Objects;
 
-import static org.optaplanner.core.api.score.stream.Joiners.equal;
+import static ai.timefold.solver.core.api.score.stream.Joiners.equal;
 
 public class HorarioConstraintProvider implements ConstraintProvider {
 

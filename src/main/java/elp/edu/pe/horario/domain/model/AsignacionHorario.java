@@ -1,9 +1,9 @@
 package elp.edu.pe.horario.domain.model;
 
 import elp.edu.pe.horario.domain.solver.AsignacionHorarioDifficultyComparator;
-import org.optaplanner.core.api.domain.entity.PlanningEntity;
-import org.optaplanner.core.api.domain.lookup.PlanningId;
-import org.optaplanner.core.api.domain.variable.PlanningVariable;
+import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
+import ai.timefold.solver.core.api.domain.lookup.PlanningId;
+import ai.timefold.solver.core.api.domain.variable.PlanningVariable;
 
 import java.util.UUID;
 
