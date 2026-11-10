@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 @Configuration
-public class OptaPlannerConfig {
+public class TimefoldConfig {
 
     @Bean
     public SolverConfig solverConfig(){
@@ -60,7 +60,7 @@ public class OptaPlannerConfig {
     }
 
     @Bean
-    public SolverManager<HorarioSolucion, UUID> solverManager(SolverFactory<HorarioSolucion> solverFactory) {
+    public SolverManager<HorarioSolucion> solverManager(SolverFactory<HorarioSolucion> solverFactory) {
         return SolverManager.create(solverFactory);
     }
 }

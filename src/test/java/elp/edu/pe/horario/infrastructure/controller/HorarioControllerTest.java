@@ -4,9 +4,8 @@ import elp.edu.pe.horario.application.dto.HorarioDto;
 import elp.edu.pe.horario.application.usecase.asignacion_horario.ObtenerHorariosUseCase;
 import elp.edu.pe.horario.domain.enums.DiaSemana;
 import org.junit.jupiter.api.Test;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import tools.jackson.databind.json.JsonMapper;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalTime;
@@ -26,10 +25,9 @@ class HorarioControllerTest {
         when(useCase.obtenerHorariosPorSeccion(id)).thenReturn(rows);
         when(useCase.obtenerHorariosPorDocente(id)).thenReturn(rows);
         when(useCase.obtenerHorariosPorPeriodo(id)).thenReturn(rows);
-        var mapper = new ObjectMapper().findAndRegisterModules()
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        var mapper = JsonMapper.builder().build();
         var mvc = MockMvcBuilders.standaloneSetup(new HorarioController(useCase))
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper)).build();
+                .setMessageConverters(new JacksonJsonHttpMessageConverter(mapper)).build();
         for (var route : List.of("seccion", "docente", "periodo")) {
             mvc.perform(get("/horarios/" + route + "/" + id))
                     .andExpect(status().isOk())

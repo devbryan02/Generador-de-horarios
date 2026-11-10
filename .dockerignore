@@ -1,0 +1,10 @@
+.git
+.idea
+.mvn
+mvnw
+mvnw.cmd
+target
+**/application.properties
+.env
+.env.*
+*.log

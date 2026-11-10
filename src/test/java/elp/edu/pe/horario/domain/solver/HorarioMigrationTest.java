@@ -2,11 +2,17 @@ package elp.edu.pe.horario.domain.solver;
 
 import elp.edu.pe.horario.domain.enums.*;
 import elp.edu.pe.horario.domain.model.*;
+import elp.edu.pe.horario.shared.config.TimefoldConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
-import ai.timefold.solver.core.api.score.ScoreManager;
+import ai.timefold.solver.core.api.solver.SolutionManager;
 import ai.timefold.solver.core.api.solver.SolverFactory;
 import ai.timefold.solver.core.config.solver.SolverConfig;
+import ai.timefold.solver.core.config.solver.EnvironmentMode;
+import ai.timefold.solver.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
+import ai.timefold.solver.core.config.constructionheuristic.ConstructionHeuristicType;
+import ai.timefold.solver.core.config.localsearch.LocalSearchPhaseConfig;
+import ai.timefold.solver.core.config.localsearch.LocalSearchType;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -59,7 +65,7 @@ class HorarioMigrationTest {
 
     private static void score(HorarioSolucion solucion, long hard, long soft) {
         var factory = SolverFactory.<HorarioSolucion>create(config());
-        ScoreManager.create(factory).updateScore(solucion);
+        SolutionManager.create(factory).update(solucion);
         var actual = solucion.getScore();
         assertEquals(hard, actual.hardScore());
         assertEquals(soft, actual.softScore());
@@ -117,6 +123,21 @@ class HorarioMigrationTest {
         assertTrue(result.getScore().hardScore() < 0);
     }
 
+    @Test void productionConfigurationSolvesWithoutDatabase() throws Exception {
+        var configuration = new TimefoldConfig();
+        var production = configuration.solverConfig();
+        production.withTerminationSpentLimit(Duration.ofSeconds(1));
+        var factory = configuration.solverFactory(production);
+        var a = aula(1); var b = bloque(8);
+        var input = solucion(List.of(a), List.of(b), clase(1, null, null));
+        try (var manager = configuration.solverManager(factory)) {
+            var result = manager.solve(id(900), input).getFinalBestSolution();
+            assertEquals(0, result.getScore().hardScore());
+            assertNotNull(result.getAsignacionHorarioList().get(0).getAula());
+            assertNotNull(result.getAsignacionHorarioList().get(0).getBloqueHorario());
+        }
+    }
+
     @Test @Tag("benchmark") void compareSolverOnSyntheticData() {
         for (int seed = -1; seed < 3; seed++) {
             var aulas = List.of(aula(1), aula(2), aula(3));
@@ -124,7 +145,12 @@ class HorarioMigrationTest {
             var clases = new ArrayList<AsignacionHorario>();
             for (int n = 1; n <= 10; n++) clases.add(clase(n, null, null));
             var input = solucion(aulas, bloques, clases.toArray(AsignacionHorario[]::new));
-            var cfg = config().withRandomSeed((long) Math.max(seed, 0))
+            var cfg = config()
+                    .withEnvironmentMode(EnvironmentMode.NON_REPRODUCIBLE)
+                    .withPhases(new ConstructionHeuristicPhaseConfig()
+                                    .withConstructionHeuristicType(ConstructionHeuristicType.FIRST_FIT_DECREASING),
+                            new LocalSearchPhaseConfig().withLocalSearchType(LocalSearchType.TABU_SEARCH))
+                    .withRandomSeed((long) Math.max(seed, 0))
                     .withTerminationSpentLimit(Duration.ofSeconds(seed < 0 ? 2 : 30));
             var solver = SolverFactory.<HorarioSolucion>create(cfg).buildSolver();
             long started = System.nanoTime();

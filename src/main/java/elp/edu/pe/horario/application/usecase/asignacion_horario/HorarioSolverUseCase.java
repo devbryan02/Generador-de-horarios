@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 public class HorarioSolverUseCase {
 
-    private final SolverManager<HorarioSolucion, UUID> solverManager;
+    private final SolverManager<HorarioSolucion> solverManager;
     private final AsignacionHorarioRepository asignacionHorarioRepository;
     private final MensajeGeneracionUseCase mostrarMensajeGeneracionUseCase;
     private final AnalizarSolucionUseCase analizarSolucionHorarioUseCase;
@@ -30,7 +30,7 @@ public class HorarioSolverUseCase {
     public GeneracionHorarioResponse ejecutar(HorarioSolucion solucion) throws ExecutionException, InterruptedException {
         try {
             UUID solucionId = UUID.randomUUID();
-            SolverJob<HorarioSolucion, UUID> solverJob = solverManager.solve(solucionId, solucion);
+            SolverJob<HorarioSolucion> solverJob = solverManager.solve(solucionId, solucion);
             HorarioSolucion solucionFinal = solverJob.getFinalBestSolution();
 
             if (solucionFinal == null) {
