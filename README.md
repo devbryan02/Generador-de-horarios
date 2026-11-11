@@ -11,6 +11,9 @@ se conservan las reglas académicas y los contratos HTTP existentes.
 - Variables de entorno `DATABASE_DRIVER`, `DATABASE_URL`, `DATABASE_USERNAME`,
   `DATABASE_PASSWORD`, `JWT_SECRET` y `JWT_EXPIRATION`.
 - Para el frontend actual: `SERVER_SERVLET_CONTEXT_PATH=/api/v1` y puerto 8080.
+- Con el esquema demo fuera de Compose, activar
+  `SPRING_JPA_PROPERTIES_HIBERNATE_GLOBALLY_QUOTED_IDENTIFIERS=true` por el nombre
+  existente de la tabla `curso_seccion-docente`.
 
 El datasource personalizado consume `database.*`, no `spring.datasource.*`.
 Spring resuelve estas propiedades desde las variables de entorno indicadas
@@ -58,7 +61,10 @@ context path configurado.
 
 El Dockerfile compila con Java 25, ejecuta las pruebas sin SQL y empaqueta el
 JAR. El Compose del workspace está un nivel arriba; incluye SQL Server,
-backend y frontend. No inicializa esquema ni procedimientos almacenados.
+inicialización de la base, backend y frontend. `docker/sql/` contiene un esquema
+reconstruido desde JPA, tres procedimientos locales y datos demo idempotentes.
+No son los scripts originales. El arranque y las credenciales de desarrollo
+están documentados en `../docs/docker-local.md`.
 
 La migración conserva fallos funcionales conocidos, incluidos el borrado
 global al regenerar y el guardado de soluciones inviables. No ejecutar la

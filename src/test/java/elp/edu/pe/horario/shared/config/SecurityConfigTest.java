@@ -22,9 +22,11 @@ import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringJUnitConfig(classes = {SecurityConfig.class, SecurityConfigTest.TestConfig.class})
+@SpringJUnitConfig(classes = {SecurityConfig.class, CorsConfig.class, SecurityConfigTest.TestConfig.class})
 @WebAppConfiguration
 @TestPropertySource(properties = {"jwt.secret=synthetic-test-secret-at-least-32-bytes-long", "jwt.expiration=60000"})
 class SecurityConfigTest {
@@ -61,5 +63,27 @@ class SecurityConfigTest {
                 .andExpect(status().isOk());
         mvc.perform(get("/admin/probe").with(user("coordinador").roles("COORDINADOR")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test void localBrowserPreflightSucceedsBeforeAuthentication() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        mvc.perform(options("/aula/probe")
+                        .header("Origin", "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+        mvc.perform(get("/aula/probe").header("Origin", "http://localhost:3000"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test void foreignBrowserOriginIsRejected() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        mvc.perform(options("/aula/probe")
+                        .header("Origin", "https://example.invalid")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 }
