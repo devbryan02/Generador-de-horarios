@@ -6,14 +6,14 @@ import elp.edu.pe.horario.domain.model.Docente;
 import elp.edu.pe.horario.domain.model.Seccion;
 import elp.edu.pe.horario.domain.model.BloqueHorario;
 import elp.edu.pe.horario.domain.model.CursoSeccionDocente;
-import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
-import org.optaplanner.core.api.score.stream.*;
+import ai.timefold.solver.core.api.score.HardSoftScore;
+import ai.timefold.solver.core.api.score.stream.*;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Objects;
 
-import static org.optaplanner.core.api.score.stream.Joiners.equal;
+import static ai.timefold.solver.core.api.score.stream.Joiners.equal;
 
 public class HorarioConstraintProvider implements ConstraintProvider {
 
@@ -134,7 +134,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                             !curso1.equals(curso2); // <== clave: cursos distintos
                 })
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Docente y sección en cursos distintos al mismo tiempo");
+                .asConstraint("evitarConflictoMismoDocenteMismaSeccionCursoDistinto");
     }
 
 
@@ -150,7 +150,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                     return count > maxBloques;
                 })
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Limitar bloques a horas semanales requeridas por curso");
+                .asConstraint("limitarHorasRequeridasPorCurso");
     }
 
 
@@ -165,7 +165,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                             Math.abs(Duration.between(h1, h2).toMinutes()) <= 120;
                 })
                 .penalize(HardSoftScore.ONE_SOFT.multiply(SOFT_SCORE_MEDIUM))
-                .asConstraint("Evitar bloques consecutivos para misma sección");
+                .asConstraint("evitarBloquesConsecutivosMismaSeccion");
     }
 
 
@@ -180,7 +180,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .filter((docente, dia, bloquesEnUnDia) -> bloquesEnUnDia > 3)
                 .penalize(HardSoftScore.ONE_SOFT,
                         (docente, dia, bloquesEnUnDia) -> SOFT_SCORE_MEDIUM * (bloquesEnUnDia - 3))
-                .asConstraint("Distribuir bloques del docente en la semana");
+                .asConstraint("distribuirCargaDocente");
     }
 
 
@@ -194,7 +194,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .filter((dia, totalAsignaciones) -> totalAsignaciones > 5)
                 .penalize(HardSoftScore.ONE_SOFT,
                         (dia, totalAsignaciones) -> SOFT_SCORE_MEDIUM * (totalAsignaciones - 5))
-                .asConstraint("Evitar sobreuso de bloques por día");
+                .asConstraint("evitarSobreusoDeBloques");
     }
 
 
@@ -203,7 +203,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .forEach(AsignacionHorario.class)
                 .filter(asignacion -> asignacion.getBloqueHorario() == null || asignacion.getAula() == null)
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Asignación debe tener bloque y aula");
+                .asConstraint("asignacionDebeEstarCompleta");
     }
 
     private Constraint aulaNoSuperpuesta(ConstraintFactory factory) {
@@ -216,7 +216,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                     return b1 != null && b1.equals(b2);
                 })
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Aula ocupada en mismo bloque");
+                .asConstraint("aulaNoSuperpuesta");
     }
 
     private Constraint docenteNoSuperpuesto(ConstraintFactory factory) {
@@ -232,7 +232,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                             bloquesSeSuperponen(b1, b2);
                 })
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Docente con horarios superpuestos");
+                .asConstraint("docenteNoSuperpuesto");
     }
     private boolean bloquesSeSuperponen(BloqueHorario b1, BloqueHorario b2) {
         return !(b1.getHoraFin().isBefore(b2.getHoraInicio()) || b2.getHoraFin().isBefore(b1.getHoraInicio()));
@@ -248,7 +248,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                     return b1 != null && b1.equals(b2);
                 })
                 .penalize(HardSoftScore.ONE_HARD.multiply(HARD_SCORE_HIGH))
-                .asConstraint("Sección con horarios superpuestos");
+                .asConstraint("seccionNoSuperpuesta");
     }
 
 
@@ -262,7 +262,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                                 totalHoras > docente.getHorasContratadas())
                 .penalize(HardSoftScore.ONE_HARD.multiply(5000),
                         (docente, totalHoras) -> totalHoras - docente.getHorasContratadas())
-                .asConstraint("Excede horas contratadas");
+                .asConstraint("limitarHorasContratadasPorDocente");
     }
 
     private Constraint evitarRestriccionesDocente(ConstraintFactory factory) {
@@ -270,7 +270,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .forEach(AsignacionHorario.class)
                 .filter(this::tieneRestriccionBloqueada)
                 .penalize(HardSoftScore.ONE_HARD.multiply(100))
-                .asConstraint("Evitar bloques restringidos por docente");
+                .asConstraint("evitarRestriccionesDocente");
     }
 
     // ================= RESTRICCIONES SOFT =================
@@ -280,7 +280,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .forEach(AsignacionHorario.class)
                 .groupBy(AsignacionHorario::getBloqueHorario, ConstraintCollectors.count())
                 .penalize(HardSoftScore.ONE_SOFT.multiply(1), (bloque, count) -> count * count)
-                .asConstraint("Evitar concentración de asignaciones en pocos bloques");
+                .asConstraint("incentivarDistribucionDeBloques");
     }
 
 
@@ -289,7 +289,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .forEach(AsignacionHorario.class)
                 .groupBy(AsignacionHorario::getAula, ConstraintCollectors.count())
                 .penalize(HardSoftScore.ONE_SOFT, (aula, count) -> count * count)
-                .asConstraint("Evitar sobreuso de aulas individuales");
+                .asConstraint("fomentarUsoDistribuidoDeAulas");
     }
 
 
@@ -298,7 +298,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                 .forEach(AsignacionHorario.class)
                 .groupBy(AsignacionHorario::getBloqueHorario)
                 .reward(HardSoftScore.ONE_SOFT.multiply(SOFT_SCORE_MEDIUM))
-                .asConstraint("Incentivar uso de bloques distintos");
+                .asConstraint("incentivarUsoDeMasBloques");
     }
 
 
@@ -316,7 +316,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                             Integer horasRequeridas = csd.getCurso().getHorasSemanales();
                             return horasRequeridas - horasAsignadas;
                         })
-                .asConstraint("Preferir cumplir horas semanales requeridas");
+                .asConstraint("cumplirHorasRequeridas");
     }
 
     private Constraint incentivarCompartirBloquesSinCruces(ConstraintFactory factory) {
@@ -331,7 +331,7 @@ public class HorarioConstraintProvider implements ConstraintProvider {
                         )
                 )
                 .reward(HardSoftScore.ONE_SOFT.multiply(SOFT_SCORE_MEDIUM))
-                .asConstraint("Compartir bloques sin cruces");
+                .asConstraint("incentivarCompartirBloquesSinCruces");
     }
 
 }

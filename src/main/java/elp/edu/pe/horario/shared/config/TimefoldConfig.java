@@ -3,14 +3,14 @@ package elp.edu.pe.horario.shared.config;
 import elp.edu.pe.horario.domain.model.AsignacionHorario;
 import elp.edu.pe.horario.domain.solver.HorarioConstraintProvider;
 import elp.edu.pe.horario.domain.solver.HorarioSolucion;
-import org.optaplanner.core.api.solver.SolverFactory;
-import org.optaplanner.core.api.solver.SolverManager;
-import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
-import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType;
-import org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig;
-import org.optaplanner.core.config.localsearch.LocalSearchType;
-import org.optaplanner.core.config.solver.SolverConfig;
-import org.optaplanner.core.config.solver.termination.TerminationConfig;
+import ai.timefold.solver.core.api.solver.SolverFactory;
+import ai.timefold.solver.core.api.solver.SolverManager;
+import ai.timefold.solver.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
+import ai.timefold.solver.core.config.constructionheuristic.ConstructionHeuristicType;
+import ai.timefold.solver.core.config.localsearch.LocalSearchPhaseConfig;
+import ai.timefold.solver.core.config.localsearch.LocalSearchType;
+import ai.timefold.solver.core.config.solver.SolverConfig;
+import ai.timefold.solver.core.config.solver.termination.TerminationConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 @Configuration
-public class OptaPlannerConfig {
+public class TimefoldConfig {
 
     @Bean
     public SolverConfig solverConfig(){
@@ -60,7 +60,7 @@ public class OptaPlannerConfig {
     }
 
     @Bean
-    public SolverManager<HorarioSolucion, UUID> solverManager(SolverFactory<HorarioSolucion> solverFactory) {
+    public SolverManager<HorarioSolucion> solverManager(SolverFactory<HorarioSolucion> solverFactory) {
         return SolverManager.create(solverFactory);
     }
 }

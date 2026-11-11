@@ -7,8 +7,8 @@ import elp.edu.pe.horario.domain.solver.HorarioSolucion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.solver.SolverJob;
-import org.optaplanner.core.api.solver.SolverManager;
+import ai.timefold.solver.core.api.solver.SolverJob;
+import ai.timefold.solver.core.api.solver.SolverManager;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 public class HorarioSolverUseCase {
 
-    private final SolverManager<HorarioSolucion, UUID> solverManager;
+    private final SolverManager<HorarioSolucion> solverManager;
     private final AsignacionHorarioRepository asignacionHorarioRepository;
     private final MensajeGeneracionUseCase mostrarMensajeGeneracionUseCase;
     private final AnalizarSolucionUseCase analizarSolucionHorarioUseCase;
@@ -30,7 +30,7 @@ public class HorarioSolverUseCase {
     public GeneracionHorarioResponse ejecutar(HorarioSolucion solucion) throws ExecutionException, InterruptedException {
         try {
             UUID solucionId = UUID.randomUUID();
-            SolverJob<HorarioSolucion, UUID> solverJob = solverManager.solve(solucionId, solucion);
+            SolverJob<HorarioSolucion> solverJob = solverManager.solve(solucionId, solucion);
             HorarioSolucion solucionFinal = solverJob.getFinalBestSolution();
 
             if (solucionFinal == null) {

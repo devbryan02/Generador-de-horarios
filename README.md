@@ -1,185 +1,73 @@
-# 📅 Sistema de Asignación de Horarios con OptaPlanner
+# Generador de horarios
 
-## 📋 Descripción
+API de horarios académicos con Java 25 LTS, Spring Boot 4.1.2,
+Timefold Solver 2.8.0 y SQL Server. Timefold sustituye a OptaPlanner;
+se conservan las reglas académicas y los contratos HTTP existentes.
 
-Este proyecto es un **back-end** desarrollado en **Java Spring Boot** que implementa un sistema inteligente de asignación de horarios académicos utilizando **OptaPlanner**. El sistema optimiza automáticamente la distribución de cursos, docentes, aulas y bloques horarios considerando múltiples restricciones y preferencias.
+## Requisitos y configuración
 
-## 🚀 Características Principales
+- JDK 25. Maven Wrapper descarga Maven 3.10.0.
+- SQL Server con esquema y procedimientos almacenados del proyecto.
+- Variables de entorno `DATABASE_DRIVER`, `DATABASE_URL`, `DATABASE_USERNAME`,
+  `DATABASE_PASSWORD`, `JWT_SECRET` y `JWT_EXPIRATION`.
+- Para el frontend actual: `SERVER_SERVLET_CONTEXT_PATH=/api/v1` y puerto 8080.
+- Con el esquema demo fuera de Compose, activar
+  `SPRING_JPA_PROPERTIES_HIBERNATE_GLOBALLY_QUOTED_IDENTIFIERS=true` por el nombre
+  existente de la tabla `curso_seccion-docente`.
 
-- **Optimización Inteligente**: Utiliza OptaPlanner para resolver el problema de asignación de horarios de manera óptima
-- **Restricciones Flexibles**: Maneja restricciones duras (obligatorias) y blandas (preferibles)
-- **API RESTful**: Endpoints para generar, consultar y gestionar horarios
-- **Persistencia de Datos**: Integración con SQL Server para almacenar información
-- **Arquitectura Limpia**: Implementa principios de Clean Architecture
-- **Manejo de Excepciones**: Sistema robusto de manejo de errores
+El datasource personalizado consume `database.*`, no `spring.datasource.*`.
+Spring resuelve estas propiedades desde las variables de entorno indicadas
+o desde un `application.properties` externo. No versionar secretos.
+`JWT_SECRET` debe tener al menos 32 bytes para HS256; `JWT_EXPIRATION` usa
+milisegundos. No se generan credenciales ni usuarios automáticamente.
 
-## 🏗️ Arquitectura del Sistema
+## Comandos (PowerShell)
 
-### Entidades Principales
-
-- **🏫 Aula**: Salones con capacidad y tipo (laboratorio/teórico)
-- **👨‍🏫 Docente**: Profesores con unidades académicas y horas contratadas
-- **📚 Curso**: Materias con tipo y unidad académica
-- **📝 CursoSeccion**: Secciones específicas de cursos
-- **⏰ BloqueHorario**: Franjas horarias con día y horas
-- **📊 AsignacionHorario**: Entidad principal que conecta todo (Planning Entity)
-
-### Restricciones Implementadas
-
-#### Restricciones Duras (Hard Constraints)
-- Un aula no puede estar ocupada en el mismo bloque horario
-- Un docente no puede estar en dos lugares al mismo tiempo
-- Compatibilidad entre tipo de aula y tipo de curso
-- Disponibilidad de docentes según sus restricciones
-
-#### Restricciones Blandas (Soft Constraints)
-- Balanceo de horas asignadas vs. horas contratadas del docente
-- Optimización del uso de recursos disponibles
-
-## 🛠️ Tecnologías Utilizadas
-
-- **Java 17**
-- **Spring Boot 3.4.4**
-- **OptaPlanner 9.44.0** - Motor de optimización
-- **Spring Data JPA** - Persistencia de datos
-- **SQL Server** - Base de datos
-- **Lombok** - Reducción de código boilerplate
-- **Maven** - Gestión de dependencias
-
-## 📁 Estructura del Proyecto
-
-```
-src/
-├── main/java/elp/edu/pe/horario/
-│   ├── application/
-│   │   ├── dto/              # DTOs para transferencia de datos
-│   │   ├── mapper/           # Mappers para conversión de entidades
-│   │   └── usecase/          # Casos de uso de la aplicación
-│   ├── domain/
-│   │   ├── enums/            # Enumeraciones del dominio
-│   │   ├── model/            # Entidades del dominio
-│   │   ├── repository/       # Interfaces de repositorio
-│   │   └── solver/           # Configuración de OptaPlanner
-│   ├── infrastructure/
-│   │   └── persistence/      # Implementación de persistencia
-│   └── shared/
-│       ├── config/           # Configuraciones
-│       └── exception/        # Manejo de excepciones
+```powershell
+.\mvnw.cmd clean verify
+.\mvnw.cmd spring-boot:run
 ```
 
-## 🚀 Instalación y Configuración
+La verificación predeterminada ejecuta pruebas sintéticas, de JWT, HTTP,
+autorización y configuración Spring/Timefold sin SQL Server. Las pruebas
+marcadas `integration` y el benchmark quedan fuera de esa ejecución.
 
-### Prerrequisitos
-
-- Java 17 o superior
-- Maven 3.6+
-- SQL Server
-- IDE compatible con Java (IntelliJ IDEA, Eclipse, VS Code)
-
-### Pasos de Instalación
-
-1. **Clona el repositorio**
-   ```bash
-   git clone https://github.com/devbryan02/asignacion-de-horario.git
-   cd asignacion-de-horario
-   ```
-
-2. **Configura la base de datos**
-   ```properties
-   # En application.properties
-   spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=horarios_db
-   spring.datasource.username=tu_usuario
-   spring.datasource.password=tu_password
-   ```
-
-3. **Instala las dependencias**
-   ```bash
-   mvn clean install
-   ```
-
-4. **Ejecuta la aplicación**
-   ```bash
-   mvn spring-boot:run
-   ```
-
-## 📊 Uso del Sistema
-
-### Generar Horarios Optimizados
-
-El sistema utiliza OptaPlanner para generar horarios optimizados automáticamente:
-
-```java
-// El solver procesa las entidades y genera la mejor solución posible
-HorarioSolucion solucion = horarioSolucionBuilder.construir(periodo);
-GeneracionHorarioResponse response = horarioSolverUseCase.ejecutar(solucion);
+```powershell
+# Con SQL Server y configuración disponibles:
+.\mvnw.cmd -Pintegration verify
+# Benchmark: calentamiento y tres semillas de 30 segundos.
+.\mvnw.cmd '-Dtest=HorarioMigrationTest#compareSolverOnSyntheticData' '-DexcludedGroups=integration' test
 ```
 
-### Principales Endpoints
+## Arquitectura y generación
 
-- `POST /api/horarios/generar` - Genera un nuevo horario optimizado
-- `GET /api/horarios/{periodoId}` - Obtiene horarios por período
-- `GET /api/horarios/analisis` - Analiza la calidad de la solución
+- `application/`: casos de uso, DTO y mappers HTTP.
+- `domain/`: entidades, contratos de repositorios y restricciones del solver.
+- `infrastructure/`: controladores, entidades JPA y adaptadores de persistencia.
+- `shared/`: seguridad, configuración y manejo de errores.
 
-## ⚙️ Configuración de OptaPlanner
+La relación curso–sección–docente se configura antes de optimizar.
+`POST /horario/resolver?periodoId=<UUID>` prepara el problema, espera al solver
+y persiste las asignaciones. Las variables de planificación son aula y bloque.
+La configuración productiva está en `TimefoldConfig`: construcción inicial,
+búsqueda tabú, late acceptance y límite global de dos minutos, con terminación
+anticipada por factibilidad o falta de mejora.
 
-El sistema está configurado con:
+`GET /horarios/seccion/{id}`, `/horarios/docente/{id}` y
+`/horarios/periodo/{id}` consultan el resultado. Las rutas son relativas al
+context path configurado.
 
-- **Tiempo límite**: 30 segundos de optimización
-- **Fases de construcción**: Construcción heurística inicial
-- **Búsqueda local**: Optimización iterativa
-- **Puntuación**: Sistema Hard/Soft Score
+## Docker y límites de la migración
 
-```java
-@Bean
-public SolverConfig solverConfig(){
-    return new SolverConfig()
-            .withSolutionClass(HorarioSolucion.class)
-            .withEntityClasses(AsignacionHorario.class)
-            .withConstraintProviderClass(HorarioConstraintProvider.class)
-            .withTerminationSpentLimit(Duration.ofSeconds(30));
-}
-```
+El Dockerfile compila con Java 25, ejecuta las pruebas sin SQL y empaqueta el
+JAR. El Compose del workspace está un nivel arriba; incluye SQL Server,
+inicialización de la base, backend y frontend. `docker/sql/` contiene un esquema
+reconstruido desde JPA, tres procedimientos locales y datos demo idempotentes.
+No son los scripts originales. El arranque y las credenciales de desarrollo
+están documentados en `../docs/docker-local.md`.
 
-## 🧪 Testing
-
-Ejecuta las pruebas unitarias:
-
-```bash
-mvn test
-```
-
-## 📈 Métricas y Análisis
-
-El sistema proporciona métricas detalladas sobre la calidad de la solución:
-
-- Cantidad de asignaciones realizadas
-- Número de aulas utilizadas
-- Bloques horarios ocupados
-- Docentes asignados
-- Puntuación Hard/Soft Score
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Añade nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
-
-## 📝 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 👨‍💻 Autor
-
-**Bryan** - [@devbryan02](https://github.com/devbryan02)
-
-## 🔗 Enlaces
-
-- [Repositorio del Proyecto](https://github.com/devbryan02/asignacion-de-horario)
-- [OptaPlanner Documentation](https://docs.optaplanner.org/)
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-
----
-
-⭐ ¡Si te ha gustado este proyecto, no olvides darle una estrella!
+La migración conserva fallos funcionales conocidos, incluidos el borrado
+global al regenerar y el guardado de soluciones inviables. No ejecutar la
+generación sobre datos reales hasta resolverlos. El informe de migración y
+la comparación sintética están en `../docs/` del workspace; esa carpeta no
+forma parte de este repositorio Git independiente.
